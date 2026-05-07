@@ -5,6 +5,7 @@ import { LayoutDashboard, Users, Sparkles, Settings, LogOut, Heart, MessageSquar
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SoulAvatar } from "@/components/soul-avatar";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

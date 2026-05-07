@@ -1,0 +1,61 @@
+
+{
+  "entities": {
+    "SafeSpace": {
+      "title": "SafeSpace",
+      "description": "A dedicated emotional session/community space.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "ambientColor": { "type": "string" },
+        "tone": { "type": "string" },
+        "memberCount": { "type": "number" }
+      },
+      "required": ["name", "description", "ambientColor", "tone"]
+    },
+    "SpacePost": {
+      "title": "SpacePost",
+      "description": "A supportive post within a safe space.",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "authorName": { "type": "string" },
+        "mood": { "type": "string", "enum": ["calm", "anxious", "sad", "joy", "neutral"] },
+        "warmth": { "type": "number" },
+        "isSensitive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "authorName", "mood", "createdAt"]
+    },
+    "CheckIn": {
+      "title": "CheckIn",
+      "description": "A user's daily emotional record.",
+      "type": "object",
+      "properties": {
+        "moodValue": { "type": "number" },
+        "heavinessValue": { "type": "number" },
+        "reflection": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["moodValue", "heavinessValue", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": ["google.com"]
+  },
+  "firestore": {
+    "/spaces": {
+      "schema": { "$ref": "#/backend/entities/SafeSpace" },
+      "description": "List of available Safe Spaces."
+    },
+    "/spaces/{spaceId}/posts": {
+      "schema": { "$ref": "#/backend/entities/SpacePost" },
+      "description": "Posts within a specific Safe Space."
+    },
+    "/users/{userId}/checkins": {
+      "schema": { "$ref": "#/backend/entities/CheckIn" },
+      "description": "User daily emotional history."
+    }
+  }
+}

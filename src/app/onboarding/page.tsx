@@ -67,15 +67,18 @@ export default function OnboardingPage() {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
-          onboarding_completed: true,
-          struggling_status: struggling,
-          support_categories: selectedCategories,
-          reason_for_joining: reasonForJoining,
-          interests: selectedInterests,
-          emotional_vibe: selectedVibe,
-        })
-        .eq('id', user?.id);
+        .upsert(
+          {
+            id: user?.id,
+            onboarding_completed: true,
+            struggling_status: struggling,
+            support_categories: selectedCategories,
+            reason_for_joining: reasonForJoining,
+            interests: selectedInterests,
+            emotional_vibe: selectedVibe,
+          },
+          { onConflict: 'id' }
+        );
 
       if (error) throw error;
 

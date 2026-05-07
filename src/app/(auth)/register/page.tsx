@@ -51,6 +51,15 @@ export default function RegisterPage() {
     return Object.keys(newErrors).length === 0;
   };
 
+  const createUsername = (name: string) => {
+    const base = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    const suffix = Math.floor(1000 + Math.random() * 9000);
+    return `${base || 'amity'}${suffix}`;
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -71,6 +80,7 @@ export default function RegisterPage() {
 
     try {
       const supabase = createClient();
+      const username = createUsername(formData.fullName);
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
@@ -78,36 +88,64 @@ export default function RegisterPage() {
         options: {
           data: {
             full_name: formData.fullName,
-            username: formData.fullName.replace(/\s+/g, '').toLowerCase(),
-          }
-        }
+            username,
+          },
+        },
       });
 
-      if (authError) throw authError;
+      if (authError) {
+        const errorMessage = authError.message || '';
+        const isEmailSendRateLimit = authError.code === 'over_email_send_rate_limit' || /over_email_send_rate_limit|limit|quota|too many/i.test(errorMessage);
+        const isEmailExistsError = /already registered|already exists|user already exists|duplicate/i.test(errorMessage);
 
-      if (authData.user) {
+        throw {
+          ...authError,
+          message: isEmailExistsError
+            ? 'This email is already registered. Please log in or reset your password.'
+            : isEmailSendRateLimit
+            ? 'Too many signup emails have been sent. Please wait a few minutes and try again.'
+            : authError.message,
+        };
+      }
+
+      const user = authData.user ?? authData.session?.user;
+
+      if (user) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: authData.user.id,
-            full_name: formData.fullName,
-            username: formData.fullName.replace(/\s+/g, '').toLowerCase(),
-            onboarding_completed: false,
-          });
+          .upsert(
+            {
+              id: user.id,
+              full_name: formData.fullName,
+              username,
+              onboarding_completed: false,
+            },
+            { onConflict: 'id' }
+          );
 
         if (profileError) throw profileError;
       }
 
       toast({
         title: "Account created",
-        description: "Welcome to Amity. Let's personalize your sanctuary.",
+        description: user
+          ? "Welcome to Amity. Let's personalize your sanctuary."
+          : "Check your email to verify your account before signing in.",
       });
 
-      router.push('/onboarding');
+      router.push(user ? '/onboarding' : '/login');
     } catch (error: any) {
+      const errorMessage = error?.message || '';
+      const isEmailSendRateLimit = error?.code === 'over_email_send_rate_limit' || /over_email_send_rate_limit|limit|quota|too many/i.test(errorMessage);
+      const description = /already registered|already exists|user already exists|duplicate/i.test(errorMessage)
+        ? 'This email is already registered. Please sign in or reset your password.'
+        : isEmailSendRateLimit
+        ? 'Too many signup emails have been sent. Please wait a few minutes and try again.'
+        : errorMessage || 'Registration failed. Please try again.';
+
       toast({
         title: "Registration failed",
-        description: error.message,
+        description,
         variant: "destructive",
       });
       setIsLoading(false);

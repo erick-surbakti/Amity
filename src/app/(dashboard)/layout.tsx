@@ -37,19 +37,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.name}>
-                  <Link href={item.href} passHref legacyBehavior>
-                    <SidebarMenuButton 
-                      isActive={pathname === item.href}
-                      className={`h-11 rounded-xl transition-all duration-300 ${
-                        pathname === item.href 
-                          ? "bg-primary/20 text-primary" 
-                          : "text-muted-foreground hover:bg-white/5"
-                      }`}
-                    >
+                  <SidebarMenuButton 
+                    asChild
+                    isActive={pathname === item.href}
+                    className={`h-11 rounded-xl transition-all duration-300 ${
+                      pathname === item.href 
+                        ? "bg-primary/20 text-primary" 
+                        : "text-muted-foreground hover:bg-white/5"
+                    }`}
+                  >
+                    <Link href={item.href}>
                       <item.icon className="w-5 h-5 mr-3" />
                       <span className="font-medium">{item.name}</span>
-                    </SidebarMenuButton>
-                  </Link>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>

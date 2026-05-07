@@ -71,19 +71,19 @@ export default function LandingPage() {
 
   return (
     <div className="relative w-full overflow-hidden bg-white selection:bg-black selection:text-white">
-      {/* Background Video Layer */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      {/* Background Video Layer — fixed so it always fills the viewport */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <video
           ref={videoRef}
-          className="absolute object-cover transition-opacity duration-300"
-          style={{ top: '300px', left: 0, right: 0, bottom: 0, opacity: videoOpacity }}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
+          style={{ opacity: videoOpacity }}
           playsInline
           muted
           loop={false}
         >
           <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/80 via-white/40 to-white/90 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/50 to-white/95 z-10" />
       </div>
 
       {/* Navigation */}
@@ -99,13 +99,21 @@ export default function LandingPage() {
                 {item}
               </a>
             ))}
-            <button 
-              onClick={() => router.push('/login')} 
+            <button
+              onClick={() => router.push('/login')}
               className="ml-4 rounded-full px-6 py-2.5 text-white bg-black hover:scale-105 active:scale-95 transition-all"
             >
               Begin Healing
             </button>
           </div>
+
+          {/* Mobile CTA */}
+          <button
+            onClick={() => router.push('/login')}
+            className="md:hidden rounded-full px-5 py-2 text-sm text-white bg-black hover:scale-105 active:scale-95 transition-all"
+          >
+            Begin
+          </button>
         </div>
       </nav>
 
@@ -118,11 +126,11 @@ export default function LandingPage() {
         <p className="text-base sm:text-lg max-w-2xl mt-10 leading-relaxed text-gray-600 font-light" style={{ fontFamily: 'Inter' }}>
           A modern sanctuary for your mind. Evidence-based therapy meets thoughtful technology.
         </p>
-        <button 
-          onClick={() => router.push('/login')} 
+        <button
+          onClick={() => router.push('/login')}
           className="rounded-full px-16 py-5 text-lg text-white bg-black mt-12 hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-3 group"
         >
-          Start Your Journey 
+          Start Your Journey
           <span className="group-hover:translate-x-1 transition">→</span>
         </button>
       </div>
@@ -134,7 +142,7 @@ export default function LandingPage() {
             A space built <br />for <span className="italic text-gray-400">reflection.</span>
           </h2>
           <p className="text-xl text-gray-600 leading-relaxed" style={{ fontFamily: 'Inter' }}>
-            We’ve removed the clinical coldness of traditional mental health platforms. 
+            We've removed the clinical coldness of traditional mental health platforms.
             Amity feels like a warm, private garden for your mind.
           </p>
         </div>
@@ -149,12 +157,12 @@ export default function LandingPage() {
           <h2 className="text-5xl font-normal mb-4" style={{ fontFamily: 'Instrument Serif' }}>
             Real voices. Real healing.
           </h2>
-          <p className="text-gray-500 mb-16">Don’t just take our word for it.</p>
+          <p className="text-gray-500 mb-16">Don't just take our word for it.</p>
 
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
               <div key={i} className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
-                <p className="text-lg leading-relaxed text-gray-700 mb-8 italic">“{t.quote}”</p>
+                <p className="text-lg leading-relaxed text-gray-700 mb-8 italic">"{t.quote}"</p>
                 <div>
                   <p className="font-medium">{t.name}</p>
                   <p className="text-sm text-gray-500">{t.role}</p>
@@ -175,8 +183,8 @@ export default function LandingPage() {
           <p className="text-xl text-gray-700">
             You are not alone. Help is available 24/7.
           </p>
-          <a 
-            href="tel:911" 
+          
+            href="tel:911"
             className="inline-flex items-center gap-3 mt-6 px-10 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-medium transition-all active:scale-95"
           >
             Call Emergency Services (911)
@@ -196,7 +204,7 @@ export default function LandingPage() {
               <p className="text-gray-600 max-w-xs mb-8" style={{ fontFamily: 'Inter' }}>
                 Cultivating mental resilience through thoughtful design and compassionate care.
               </p>
-              
+
               <div className="flex gap-4">
                 <a href="#" className="w-11 h-11 rounded-2xl bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors">
                   <Instagram className="w-5 h-5" />
@@ -233,7 +241,7 @@ export default function LandingPage() {
 
           <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
             <p className="text-gray-400">© 2026 Amity Health Collective. All rights reserved.</p>
-            
+
             <p className="text-rose-600/80 text-center md:text-right max-w-md">
               <strong>In a life-threatening emergency, call 911 or your local emergency services immediately.</strong>
             </p>
@@ -242,7 +250,7 @@ export default function LandingPage() {
       </footer>
 
       {/* Floating Crisis Button */}
-      <a
+      
         href="tel:911"
         className="fixed bottom-8 right-8 z-50 bg-rose-600 text-white p-4 rounded-2xl shadow-xl hover:bg-rose-700 transition-all flex items-center gap-3 group"
       >

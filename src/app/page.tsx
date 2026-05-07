@@ -70,25 +70,11 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="relative w-full overflow-hidden bg-white selection:bg-black selection:text-white">
-      {/* Background Video Layer — fixed so it always fills the viewport */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <video
-          ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300"
-          style={{ opacity: videoOpacity }}
-          playsInline
-          muted
-          loop={false}
-        >
-          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4" type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-gradient-to-b from-white/90 via-white/50 to-white/95 z-10" />
-      </div>
+    <div className="relative w-full bg-white selection:bg-black selection:text-white">
 
       {/* Navigation */}
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'}`}>
-        <div className="flex justify-between items-center px-8 max-w-7xl mx-auto w-full">
+        <div className="flex justify-between items-center px-6 max-w-7xl mx-auto w-full">
           <button onClick={() => router.push('/')} className="text-3xl font-normal text-black" style={{ fontFamily: 'Instrument Serif' }}>
             Amity<span className="text-xs align-super opacity-50">®</span>
           </button>
@@ -110,38 +96,66 @@ export default function LandingPage() {
           {/* Mobile CTA */}
           <button
             onClick={() => router.push('/login')}
-            className="md:hidden rounded-full px-5 py-2 text-sm text-white bg-black hover:scale-105 active:scale-95 transition-all"
+            className="md:hidden rounded-full px-5 py-2 text-sm text-white bg-black active:scale-95 transition-all"
           >
             Begin
           </button>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div className="relative z-20 flex flex-col items-center justify-center text-center px-6 min-h-screen pt-20" id="home">
-        <h1 className="text-5xl sm:text-7xl lg:text-8xl max-w-5xl font-normal text-black leading-[0.95] tracking-tighter" style={{ fontFamily: 'Instrument Serif' }}>
-          Find <span className="text-gray-400 italic font-light">clarity</span> in the chaos,<br />
-          and <span className="text-gray-400 italic font-light">rest</span> in the noise.
-        </h1>
-        <p className="text-base sm:text-lg max-w-2xl mt-10 leading-relaxed text-gray-600 font-light" style={{ fontFamily: 'Inter' }}>
-          A modern sanctuary for your mind. Evidence-based therapy meets thoughtful technology.
-        </p>
-        <button
-          onClick={() => router.push('/login')}
-          className="rounded-full px-16 py-5 text-lg text-white bg-black mt-12 hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-3 group"
+      {/* ── HERO ── Full viewport section with video bg */}
+      <section
+        id="home"
+        className="relative flex flex-col items-center justify-center text-center px-6 overflow-hidden"
+        style={{ minHeight: '100svh' }}
+      >
+        {/* Video fills this section only */}
+        <video
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: videoOpacity, transition: 'opacity 0.3s' }}
+          playsInline
+          muted
+          loop={false}
         >
-          Start Your Journey
-          <span className="group-hover:translate-x-1 transition">→</span>
-        </button>
-      </div>
+          <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_083109_283f3553-e28f-428b-a723-d639c617eb2b.mp4" type="video/mp4" />
+        </video>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/30 to-white/90 z-10" />
+
+        {/* Hero content */}
+        <div className="relative z-20 flex flex-col items-center justify-center w-full" style={{ paddingTop: '80px' }}>
+          <h1
+            className="text-5xl sm:text-7xl lg:text-8xl max-w-5xl font-normal text-black leading-[1] tracking-tighter"
+            style={{ fontFamily: 'Instrument Serif' }}
+          >
+            Find <span className="text-gray-400 italic font-light">clarity</span> in the chaos,<br />
+            and <span className="text-gray-400 italic font-light">rest</span> in the noise.
+          </h1>
+          <p
+            className="text-base sm:text-lg max-w-sm mt-6 leading-relaxed text-gray-600 font-light"
+            style={{ fontFamily: 'Inter' }}
+          >
+            A modern sanctuary for your mind. Evidence-based therapy meets thoughtful technology.
+          </p>
+          <button
+            onClick={() => router.push('/login')}
+            className="rounded-full px-12 py-4 text-base sm:text-lg text-white bg-black mt-8 hover:shadow-2xl hover:-translate-y-0.5 transition-all flex items-center gap-3 group"
+          >
+            Start Your Journey
+            <span className="group-hover:translate-x-1 transition">→</span>
+          </button>
+        </div>
+      </section>
 
       {/* Sanctuary Section */}
       <section id="sanctuary" className="relative z-20 min-h-screen bg-white px-8 py-32 flex items-center">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
-          <h2 className="text-6xl font-normal text-black leading-tight" style={{ fontFamily: 'Instrument Serif' }}>
+          <h2 className="text-5xl sm:text-6xl font-normal text-black leading-tight" style={{ fontFamily: 'Instrument Serif' }}>
             A space built <br />for <span className="italic text-gray-400">reflection.</span>
           </h2>
-          <p className="text-xl text-gray-600 leading-relaxed" style={{ fontFamily: 'Inter' }}>
+          <p className="text-lg sm:text-xl text-gray-600 leading-relaxed" style={{ fontFamily: 'Inter' }}>
             We've removed the clinical coldness of traditional mental health platforms.
             Amity feels like a warm, private garden for your mind.
           </p>
@@ -154,7 +168,7 @@ export default function LandingPage() {
           <div className="flex justify-center mb-6">
             <Heart className="w-10 h-10 text-rose-300" />
           </div>
-          <h2 className="text-5xl font-normal mb-4" style={{ fontFamily: 'Instrument Serif' }}>
+          <h2 className="text-4xl sm:text-5xl font-normal mb-4" style={{ fontFamily: 'Instrument Serif' }}>
             Real voices. Real healing.
           </h2>
           <p className="text-gray-500 mb-16">Don't just take our word for it.</p>
@@ -204,7 +218,6 @@ export default function LandingPage() {
               <p className="text-gray-600 max-w-xs mb-8" style={{ fontFamily: 'Inter' }}>
                 Cultivating mental resilience through thoughtful design and compassionate care.
               </p>
-
               <div className="flex gap-4">
                 <a href="#" className="w-11 h-11 rounded-2xl bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors">
                   <Instagram className="w-5 h-5" />
@@ -241,7 +254,6 @@ export default function LandingPage() {
 
           <div className="pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6 text-sm">
             <p className="text-gray-400">© 2026 Amity Health Collective. All rights reserved.</p>
-
             <p className="text-rose-600/80 text-center md:text-right max-w-md">
               <strong>In a life-threatening emergency, call 911 or your local emergency services immediately.</strong>
             </p>

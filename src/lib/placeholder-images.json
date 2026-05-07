@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-bg",
+      "description": "Calm misty mountains at dawn",
+      "imageUrl": "https://picsum.photos/seed/amity-mist/1920/1080",
+      "imageHint": "misty mountains"
+    },
+    {
+      "id": "forum-mental-health",
+      "description": "Abstract calming blue waves",
+      "imageUrl": "https://picsum.photos/seed/amity-safe/800/600",
+      "imageHint": "calm waves"
+    },
+    {
+      "id": "glimmer-1",
+      "description": "A single flower blooming through concrete",
+      "imageUrl": "https://picsum.photos/seed/amity-hope/600/800",
+      "imageHint": "flower hope"
+    },
+    {
+      "id": "glimmer-2",
+      "description": "Warm sunlight through a window",
+      "imageUrl": "https://picsum.photos/seed/amity-warmth/600/800",
+      "imageHint": "sunlight window"
+    },
+    {
+      "id": "soul-avatar-base",
+      "description": "Abstract fluid glowing sphere",
+      "imageUrl": "https://picsum.photos/seed/amity-soul/400/400",
+      "imageHint": "fluid abstract"
+    }
+  ]
 }

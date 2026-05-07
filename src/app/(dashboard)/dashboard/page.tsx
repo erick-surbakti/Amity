@@ -1,13 +1,44 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SoulAvatar } from "@/components/soul-avatar";
-import { Sparkles, Heart, MessageCircle, ArrowUpRight } from "lucide-react";
+import { Sparkles, Heart, MessageCircle, ArrowUpRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/use-auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchProfile() {
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (!error) {
+        setProfile(data);
+      }
+      setIsLoading(false);
+    }
+
+    fetchProfile();
+  }, [user, supabase]);
+
+  if (isLoading) return <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary" /></div>;
+
+  const username = profile?.username || user?.user_metadata?.username || "Friend";
+  const vibe = profile?.emotional_vibe || "Calm";
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Welcome & Mood Check-in */}
@@ -17,26 +48,34 @@ export default function DashboardPage() {
             <Sparkles className="w-32 h-32 text-primary" />
           </div>
           <CardHeader>
-            <CardTitle className="text-3xl font-bold">Good evening, PeacefulSoul.</CardTitle>
-            <p className="text-muted-foreground">How is your heart feeling in this moment?</p>
+            <CardTitle className="text-3xl font-bold">Good evening, {username}.</CardTitle>
+            <p className="text-muted-foreground">
+              {profile?.struggling_status === 'Yes' 
+                ? "You're doing so well just being here. How is your heart feeling right now?"
+                : "It's a beautiful day to connect. How are you feeling in this moment?"}
+            </p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-4 mt-4">
-            {['Calm', 'Anxious', 'Tired', 'Grateful', 'Seeking'].map((mood) => (
+            {['Quiet', 'Hopeful', 'Drained', 'Calm', 'Overwhelmed'].map((m) => (
               <Button 
-                key={mood} 
+                key={m} 
                 variant="outline" 
-                className="rounded-full glass hover:bg-primary/20 hover:text-primary border-white/10 px-6"
+                className={`rounded-full glass hover:bg-primary/20 hover:text-primary border-white/10 px-6 ${vibe === m ? 'bg-primary/20 border-primary text-primary' : ''}`}
               >
-                {mood}
+                {m}
               </Button>
             ))}
           </CardContent>
         </Card>
 
         <Card className="glass-card border-none flex flex-col items-center justify-center text-center p-6">
-          <SoulAvatar mood="calm" size="lg" className="mb-4" />
-          <h3 className="text-xl font-semibold">Your Soul Vibe</h3>
-          <p className="text-sm text-muted-foreground mb-4">You&apos;ve shared 12 glimmers this week.</p>
+          <SoulAvatar mood={vibe.toLowerCase() as any} size="lg" className="mb-4" />
+          <h3 className="text-xl font-semibold">Your Soul Vibe: {vibe}</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {profile?.interests?.length > 0 
+              ? `Connecting you with others who love ${profile.interests[0].toLowerCase()}.`
+              : "Sharing warmth with the community."}
+          </p>
           <div className="w-full space-y-2">
             <div className="flex justify-between text-xs font-medium">
               <span>Weekly Warmth Meter</span>

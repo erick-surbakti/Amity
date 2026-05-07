@@ -9,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { SoulAvatar } from "@/components/soul-avatar";
 import { Check, Sparkles, Heart, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { useAuth } from "@/firebase";
+import { useAuth } from "@/hooks/use-auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CheckInPage() {
   const [mood, setMood] = useState([50]);
@@ -20,20 +20,22 @@ export default function CheckInPage() {
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
   const { user } = useAuth();
-  const db = getFirestore();
+  const supabase = createClient();
 
   const handleCheckIn = async () => {
     if (!user) return;
     setIsSaving(true);
     
     try {
-      await addDoc(collection(db, "users", user.uid, "checkins"), {
-        moodValue: mood[0],
-        heavinessValue: heaviness[0],
+      const { error } = await supabase.from("check_ins").insert({
+        user_id: user.id,
+        mood_value: mood[0],
+        heaviness_value: heaviness[0],
         reflection,
-        createdAt: serverTimestamp(),
       });
       
+      if (error) throw error;
+
       setIsSubmitted(true);
       setTimeout(() => {
         router.push("/dashboard");

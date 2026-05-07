@@ -1,173 +1,353 @@
-"use client";
+'use client';
 
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useState } from 'react';
-import { ArrowLeft, Loader2, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { onboardingEmpathyGate, type OnboardingEmpathyGateOutput } from '@/ai/flows/onboarding-empathy-gate';
+import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export default function RegisterPage() {
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [moodText, setMoodText] = useState("");
-  const [aiResult, setAiResult] = useState<OnboardingEmpathyGateOutput | null>(null);
   const router = useRouter();
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreeToTerms: false,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleNextStep = async () => {
-    if (step === 1) {
-      setStep(2);
-      return;
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
     }
-    
-    if (step === 2) {
-      setIsLoading(true);
-      try {
-        const result = await onboardingEmpathyGate({ userEmotionalInput: moodText });
-        setAiResult(result);
-        setIsLoading(false);
-        if (!result.hasHarmfulIntent) {
-          // Proceed after a short delay to show analysis
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 3000);
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must agree to the terms';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
+    try {
+      const supabase = createClient();
+      
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.fullName.replace(/\s+/g, '').toLowerCase(),
+          }
         }
-      } catch (error) {
-        setIsLoading(false);
-        console.error(error);
+      });
+
+      if (authError) throw authError;
+
+      if (authData.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authData.user.id,
+            full_name: formData.fullName,
+            username: formData.fullName.replace(/\s+/g, '').toLowerCase(),
+            onboarding_completed: false,
+          });
+
+        if (profileError) throw profileError;
       }
+
+      toast({
+        title: "Account created",
+        description: "Welcome to Amity. Let's personalize your sanctuary.",
+      });
+
+      router.push('/onboarding');
+    } catch (error: any) {
+      toast({
+        title: "Registration failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 relative py-12">
-      <Link href="/" className="absolute top-8 left-8 flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Home
-      </Link>
+    <div className="relative min-h-screen w-full bg-gradient-to-br from-white via-gray-50 to-gray-100 flex items-center justify-center px-6 py-12">
+      {/* Background Elements */}
+      <div className="absolute top-0 right-0 w-96 h-96 bg-black/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/3 rounded-full blur-3xl" style={{ animationDelay: '1s' }} />
 
-      <div className="w-full max-w-lg animate-fade-in">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-            <div className="w-6 h-6 rounded-full bg-primary animate-morph" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Join the community</h1>
-          <p className="text-muted-foreground text-sm">A thoughtful approach to connecting</p>
+      {/* Back Button */}
+      <button
+        onClick={() => router.push('/')}
+        className="absolute top-8 left-8 flex items-center gap-2 text-gray-600 hover:text-black transition-colors group"
+        style={{ fontFamily: 'Inter' }}
+      >
+        <span className="transition-transform group-hover:-translate-x-1">←</span>
+        Back
+      </button>
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-12">
+          <button
+            onClick={() => router.push('/')}
+            className="inline-block text-3xl tracking-tight font-normal text-black hover:opacity-80 transition-opacity"
+            style={{ fontFamily: 'Instrument Serif' }}
+          >
+            Amity<span className="text-xs align-super">®</span>
+          </button>
+          <p className="mt-2 text-gray-500 text-sm" style={{ fontFamily: 'Inter' }}>
+            Create your account
+          </p>
         </div>
 
-        <Card className="glass-card border-white/5 overflow-hidden">
-          <div className="h-1 bg-muted w-full overflow-hidden">
-            <div 
-              className="h-full bg-primary transition-all duration-500 ease-out" 
-              style={{ width: `${(step / 2) * 100}%` }}
-            />
-          </div>
-          
-          <CardHeader>
-            <CardTitle>
-              {step === 1 ? "Basic Details" : "Empathy Gate"}
-            </CardTitle>
-            <CardDescription>
-              {step === 1 
-                ? "Start your journey with a few simple steps." 
-                : "Tell us a bit about how you're feeling today. Our Empathy Gate helps keep Amity safe for everyone."}
-            </CardDescription>
-          </CardHeader>
+        {/* Register Form */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 md:p-10 backdrop-blur-xl bg-white/90 border border-white/20">
+          <h1 className="text-2xl font-normal text-black mb-1" style={{ fontFamily: 'Instrument Serif' }}>
+            Get Started
+          </h1>
+          <p className="text-gray-500 text-sm mb-8" style={{ fontFamily: 'Inter' }}>
+            Join us and start your journey
+          </p>
 
-          <CardContent className="space-y-4">
-            {step === 1 ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Display Name (Anonymous is okay)</Label>
-                  <Input 
-                    id="username" 
-                    placeholder="E.g. PeacefulSoul" 
-                    className="bg-background/50 border-white/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="name@example.com" 
-                    className="bg-background/50 border-white/10"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    className="bg-background/50 border-white/10"
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Full Name Input */}
+            <div>
+              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Inter' }}>
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={handleChange}
+                placeholder="John Doe"
+                className={`w-full px-4 py-3 rounded-lg border bg-white/50 focus:bg-white focus:outline-none transition-all text-gray-900 placeholder-gray-400 ${
+                  errors.fullName ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-black'
+                }`}
+                style={{ fontFamily: 'Inter' }}
+              />
+              {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
+            </div>
+
+            {/* Email Input */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Inter' }}>
+                Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="you@example.com"
+                className={`w-full px-4 py-3 rounded-lg border bg-white/50 focus:bg-white focus:outline-none transition-all text-gray-900 placeholder-gray-400 ${
+                  errors.email ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-black'
+                }`}
+                style={{ fontFamily: 'Inter' }}
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Inter' }}>
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-3 rounded-lg border bg-white/50 focus:bg-white focus:outline-none transition-all text-gray-900 placeholder-gray-400 pr-10 ${
+                    errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-black'
+                  }`}
+                  style={{ fontFamily: 'Inter' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {!aiResult ? (
+              {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            </div>
+
+            {/* Confirm Password Input */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2" style={{ fontFamily: 'Inter' }}>
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="••••••••"
+                  className={`w-full px-4 py-3 rounded-lg border bg-white/50 focus:bg-white focus:outline-none transition-all text-gray-900 placeholder-gray-400 pr-10 ${
+                    errors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-black'
+                  }`}
+                  style={{ fontFamily: 'Inter' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+            </div>
+
+            {/* Terms & Conditions */}
+            <div>
+              <label className="flex items-start gap-3 cursor-pointer" style={{ fontFamily: 'Inter' }}>
+                <input
+                  type="checkbox"
+                  name="agreeToTerms"
+                  checked={formData.agreeToTerms}
+                  onChange={handleChange}
+                  className="w-4 h-4 border border-gray-300 rounded accent-black cursor-pointer mt-1"
+                />
+                <span className="text-sm text-gray-600">
+                  I agree to the{' '}
+                  <a href="#terms" className="text-black font-medium hover:underline">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="#privacy" className="text-black font-medium hover:underline">
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+              {errors.agreeToTerms && <p className="text-red-500 text-xs mt-1">{errors.agreeToTerms}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-full py-3 text-base font-medium text-white bg-black transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden relative mt-8"
+              style={{ fontFamily: 'Inter' }}
+            >
+              <span className="absolute inset-0 bg-gradient-to-r from-black to-gray-800 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <span className="relative flex items-center justify-center gap-2">
+                {isLoading ? (
                   <>
-                    <Label htmlFor="mood">How are you arriving at Amity today?</Label>
-                    <Textarea 
-                      id="mood" 
-                      placeholder="I've been feeling a bit overwhelmed lately and I'm looking for a supportive community..." 
-                      className="min-h-[150px] bg-background/50 border-white/10 resize-none"
-                      value={moodText}
-                      onChange={(e) => setMoodText(e.target.value)}
-                    />
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 text-xs text-primary">
-                      <Sparkles className="w-4 h-4 mt-0.5 shrink-0" />
-                      <p>Our AI analyzes this to ensure a supportive environment and detect if you might need immediate professional resources.</p>
-                    </div>
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Creating account...
                   </>
                 ) : (
-                  <div className="py-8 text-center space-y-4 animate-fade-in">
-                    {aiResult.hasHarmfulIntent ? (
-                      <>
-                        <AlertCircle className="w-16 h-16 text-destructive mx-auto" />
-                        <h3 className="text-xl font-bold">Safe Space Boundary</h3>
-                        <p className="text-muted-foreground">{aiResult.analysis}</p>
-                        <p className="text-sm font-medium">{aiResult.suggestedAction}</p>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto" />
-                        <h3 className="text-xl font-bold">Welcome warmly, friend.</h3>
-                        <p className="text-muted-foreground">{aiResult.analysis}</p>
-                        <div className="p-4 rounded-xl bg-emerald-400/10 text-emerald-400 text-sm">
-                          Preparing your sanctuary...
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  <>
+                    Create Account
+                    <span className="transition-transform group-hover:translate-x-1">→</span>
+                  </>
                 )}
-              </div>
-            )}
-          </CardContent>
+              </span>
+            </button>
+          </form>
 
-          <CardFooter className="flex flex-col gap-4">
-            {!aiResult && (
-              <Button 
-                onClick={handleNextStep} 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground h-11"
-                disabled={isLoading || (step === 2 && moodText.length < 10)}
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : step === 1 ? "Next" : "Submit & Join"}
-              </Button>
-            )}
-            
-            <div className="text-center text-sm text-muted-foreground">
-              Already a member?{" "}
-              <Link href="/login" className="text-primary hover:underline">
-                Sign In
-              </Link>
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
             </div>
-          </CardFooter>
-        </Card>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500" style={{ fontFamily: 'Inter' }}>Or continue with</span>
+            </div>
+          </div>
+
+          {/* Social Auth */}
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              className="px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              style={{ fontFamily: 'Inter' }}
+            >
+              <span>Google</span>
+            </button>
+            <button
+              type="button"
+              className="px-4 py-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors flex items-center justify-center gap-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              style={{ fontFamily: 'Inter' }}
+            >
+              <span>Apple</span>
+            </button>
+          </div>
+
+          {/* Login Link */}
+          <p className="text-center text-sm text-gray-600 mt-8" style={{ fontFamily: 'Inter' }}>
+            Already have an account?{' '}
+            <button
+              onClick={() => router.push('/login')}
+              className="text-black font-medium hover:underline transition-colors"
+            >
+              Sign in
+            </button>
+          </p>
+        </div>
+
+        {/* Footer Note */}
+        <p className="text-center text-xs text-gray-500 mt-8" style={{ fontFamily: 'Inter' }}>
+          We respect your privacy.{' '}
+          <a href="#privacy" className="hover:underline">
+            Privacy Policy
+          </a>
+        </p>
       </div>
     </div>
   );

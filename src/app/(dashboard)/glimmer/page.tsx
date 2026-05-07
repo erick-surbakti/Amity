@@ -1,15 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, Heart, Sparkles, MessageCircle, Share2 } from "lucide-react";
+import { Plus, Heart, Sparkles, MessageCircle, Share2, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function GlimmersPage() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [glimmers, setGlimmers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = ["All", "Nature", "Pets", "Food", "Self-Care", "Art"];
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function fetchGlimmers() {
+      const { data, error } = await supabase
+        .from('glimmers')
+        .select(`
+          *,
+          profiles:user_id (
+            username
+          )
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching glimmers:', error);
+      } else {
+        setGlimmers(data || []);
+      }
+      setIsLoading(false);
+    }
+
+    fetchGlimmers();
+  }, [supabase]);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -40,30 +69,25 @@ export default function GlimmersPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        <GlimmerCard 
-          author="SunnyVibe" 
-          image="https://picsum.photos/seed/amity-glim1/600/800" 
-          caption="The way the light hits my plants every morning makes me feel like everything is going to be okay."
-          warmth={342}
-        />
-        <GlimmerCard 
-          author="ForestWalker" 
-          image="https://picsum.photos/seed/amity-glim3/600/800" 
-          caption="Found this tiny mushroom today. Nature is so patient with its beauty."
-          warmth={156}
-        />
-        <GlimmerCard 
-          author="CoffeeLover" 
-          image="https://picsum.photos/seed/amity-glim4/600/800" 
-          caption="Finally perfected my latte art. It's just foam, but it made me smile."
-          warmth={89}
-        />
-        <GlimmerCard 
-          author="KindSoul" 
-          image="https://picsum.photos/seed/amity-glim5/600/800" 
-          caption="Morning ritual: tea and zero notifications."
-          warmth={521}
-        />
+        {isLoading ? (
+          <div className="col-span-full flex justify-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-primary" />
+          </div>
+        ) : glimmers.length > 0 ? (
+          glimmers.map((glimmer) => (
+            <GlimmerCard 
+              key={glimmer.id}
+              author={glimmer.profiles?.username || "Anonymous"} 
+              image={glimmer.image_url} 
+              caption={glimmer.caption}
+              warmth={glimmer.warmth || 0}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-20 glass rounded-[2.5rem] border border-dashed border-white/10">
+            <p className="text-muted-foreground italic">No glimmers shared yet. Be the first to share some light.</p>
+          </div>
+        )}
       </div>
     </div>
   );

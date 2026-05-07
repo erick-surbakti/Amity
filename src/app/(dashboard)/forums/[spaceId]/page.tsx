@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,9 @@ import { SoulAvatar } from "@/components/soul-avatar";
 import { Heart, Shield, Plus, Sparkles, Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { realtimeVibeGuard, type RealtimeVibeGuardOutput } from "@/ai/flows/realtime-vibe-guard-flow";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { formatDistanceToNow } from "date-fns";
 
 export default function SpaceDetailPage() {
   const { spaceId } = useParams();
@@ -17,22 +20,85 @@ export default function SpaceDetailPage() {
   const [newPostContent, setNewPostContent] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [vibeGuardResult, setVibeGuardResult] = useState<RealtimeVibeGuardOutput | null>(null);
+  const [space, setSpace] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const { user } = useAuth();
+  const supabase = createClient();
 
-  const spaceName = typeof spaceId === 'string' ? spaceId.charAt(0).toUpperCase() + spaceId.slice(1).replace('-', ' ') : 'Safe Space';
+  useEffect(() => {
+    async function fetchData() {
+      if (!spaceId) return;
+
+      // Fetch space details
+      const { data: spaceData } = await supabase
+        .from('safe_spaces')
+        .select('*')
+        .eq('id', spaceId)
+        .single();
+      
+      setSpace(spaceData);
+
+      // Fetch posts with profiles
+      const { data: postsData } = await supabase
+        .from('space_posts')
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            soul_avatar_config
+          )
+        `)
+        .eq('space_id', spaceId)
+        .order('created_at', { ascending: false });
+      
+      setPosts(postsData || []);
+      setIsLoading(false);
+    }
+
+    fetchData();
+  }, [spaceId, supabase]);
+
+  const spaceName = space?.name || 'Safe Space';
 
   const handlePost = async () => {
+    if (!user) return;
     setIsAnalyzing(true);
     try {
       const result = await realtimeVibeGuard({ content: newPostContent });
       setVibeGuardResult(result);
-      setIsAnalyzing(false);
       
       if (result.moderationStatus === 'Safe') {
+        const { data: newPost, error } = await supabase
+          .from('space_posts')
+          .insert({
+            space_id: spaceId,
+            user_id: user.id,
+            content: newPostContent,
+            mood: 'neutral', // Default or could be derived
+            is_sensitive: result.moderationStatus !== 'Safe'
+          })
+          .select(`
+            *,
+            profiles:user_id (
+              username,
+              soul_avatar_config
+            )
+          `)
+          .single();
+
+        if (error) throw error;
+
+        setPosts([newPost, ...posts]);
+        setIsAnalyzing(false);
         setTimeout(() => {
           setIsPosting(false);
           setNewPostContent("");
           setVibeGuardResult(null);
-        }, 1500);
+        }, 1000);
+      } else {
+        setIsAnalyzing(false);
       }
     } catch (error) {
       setIsAnalyzing(false);
@@ -104,28 +170,27 @@ export default function SpaceDetailPage() {
       )}
 
       <div className="space-y-6">
-        <SafePost 
-          author="GentleSoul" 
-          mood="calm" 
-          content="I finally took a 10-minute walk today without my phone. The silence felt heavy at first, but then it started to feel like a blanket."
-          time="2h ago"
-          warmth={56}
-        />
-        <SafePost 
-          author="KindSpirit" 
-          mood="anxious" 
-          content="Does anyone else find that night time is when the thoughts get loudest? I'm trying a new ambient playlist tonight."
-          time="4h ago"
-          warmth={124}
-          sensitive
-        />
-        <SafePost 
-          author="BraveHeart" 
-          mood="neutral" 
-          content="Just here to say you're doing a good job. Even if the only thing you did today was breathe."
-          time="8h ago"
-          warmth={289}
-        />
+        {isLoading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : posts.length > 0 ? (
+          posts.map((post) => (
+            <SafePost 
+              key={post.id}
+              author={post.profiles?.username || "Anonymous"} 
+              mood={post.mood || "neutral"} 
+              content={post.content}
+              time={formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              warmth={post.warmth || 0}
+              sensitive={post.is_sensitive}
+            />
+          ))
+        ) : (
+          <div className="text-center py-20 glass rounded-[2rem] border border-dashed border-white/10">
+            <p className="text-muted-foreground italic">No reflections shared here yet. Be the first to offer support.</p>
+          </div>
+        )}
       </div>
     </div>
   );

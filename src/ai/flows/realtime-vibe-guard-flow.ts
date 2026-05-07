@@ -30,16 +30,6 @@ const realtimeVibeGuardPrompt = ai.definePrompt({
   name: 'realtimeVibeGuardPrompt',
   input: { schema: RealtimeVibeGuardInputSchema },
   output: { schema: RealtimeVibeGuardOutputSchema },
-  config: {
-    // Ensure the model provides output even if it contains sensitive content,
-    // as the purpose of this flow is to detect and categorize such content.
-    safetySettings: [
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-    ],
-  },
   prompt: `You are an AI content moderator for 'Amity', an emotional safe-space platform. Your primary goal is to maintain a supportive and safe environment for all users by identifying problematic content.
 
 Analyze the following user-generated content carefully. Your analysis should focus on three main categories:
@@ -53,6 +43,8 @@ Based on your assessment, provide a moderation status:
 -   'Block': The content contains severe issues, such as highly toxic language, explicit triggering content, or clear signs of severe distress or self-harm ideation, requiring immediate intervention or blocking.
 
 Always provide a 'reason' explaining your decision. If categories are detected, list them in 'categoriesDetected'.
+
+IMPORTANT: Return ONLY a valid JSON object. Do NOT wrap the JSON in markdown code blocks or include any other text before or after the JSON.
 
 Content to moderate: {{{content}}}`,
 });

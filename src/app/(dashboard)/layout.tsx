@@ -3,12 +3,22 @@
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { LayoutDashboard, Users, Sparkles, Settings, LogOut, Heart, MessageSquare, Wind, NotebookPen, CalendarHeart, PlusCircle, User } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SoulAvatar } from "@/components/soul-avatar";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   const navItems = [
     { name: "Feed", href: "/dashboard", icon: LayoutDashboard },
@@ -69,14 +79,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="p-4 rounded-2xl glass-card flex items-center gap-3 mb-6">
               <SoulAvatar mood="calm" size="sm" />
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-semibold truncate">PeacefulSoul</span>
+                <span className="text-sm font-semibold truncate">
+                  {user?.user_metadata?.username || user?.email || "PeacefulSoul"}
+                </span>
                 <span className="text-[10px] text-primary">Calm Vibe</span>
               </div>
             </div>
-            <Link href="/login" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors px-2">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors px-2 w-full text-left"
+            >
               <LogOut className="w-4 h-4" />
               <span>Log out</span>
-            </Link>
+            </button>
           </SidebarFooter>
         </Sidebar>
 

@@ -47,6 +47,8 @@ Based on your analysis, determine the boolean values for 'hasHarmfulIntent' and 
 Then, provide a 'suggestedAction' that guides the user appropriately. This could range from a warm welcome to recommending specific mental health resources or flagging the input for human review if the urgency or harmful intent is high.
 Finally, provide a concise 'analysis' explaining your reasoning.
 
+IMPORTANT: Return ONLY a valid JSON object. Do NOT wrap the JSON in markdown code blocks or include any other text before or after the JSON.
+
 User's emotional input: "{{{userEmotionalInput}}}"`,
 });
 
